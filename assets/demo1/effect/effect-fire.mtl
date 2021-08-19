@@ -1,0 +1,44 @@
+{
+  "__type__": "cc.Material",
+  "_name": "effect-fire",
+  "_objFlags": 0,
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "5a50aa34-b54f-4756-9025-ae25d9737392"
+  },
+  "_techniqueIndex": 0,
+  "_techniqueData": {
+    "0": {
+      "defines": {
+        "USE_TEXTURE": false,
+        "USE_ALPHA_TEST": false
+      },
+      "props": {
+        "u_brightness": {
+          "__type__": "cc.Color",
+          "r": 218,
+          "g": 32,
+          "b": 32,
+          "a": 255
+        },
+        "u_middle": {
+          "__type__": "cc.Color",
+          "r": 79,
+          "g": 237,
+          "b": 44,
+          "a": 255
+        },
+        "u_dark": {
+          "__type__": "cc.Color",
+          "r": 21,
+          "g": 129,
+          "b": 247,
+          "a": 255
+        },
+        "noiseTex": {
+          "__uuid__": "38eac4cc-9cef-429a-b732-33838055e742"
+        }
+      }
+    }
+  }
+}

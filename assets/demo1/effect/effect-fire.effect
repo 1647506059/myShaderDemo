@@ -1,0 +1,135 @@
+// Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: vs
+      frag: fs
+      blendState:
+        targets:
+        - blend: true
+      rasterizerState:
+        cullMode: none
+      properties:
+        texture: { value: white }
+        alphaThreshold: { value: 0.5 }
+        noiseTex: { value: white }
+        u_brightness: { value: [1,1,1,1], editor: { type: "color"}}
+        u_middle: { value: [1,1,1,1], editor: { type: "color"}}
+        u_dark: { value: [1,1,1,1], editor: { type: "color"}}
+        u_time: { value: 0.0 }
+}%
+
+
+CCProgram vs %{
+  precision highp float;
+
+  #include <cc-global>
+  #include <cc-local>
+
+  in vec3 a_position;
+  in vec4 a_color;
+  out vec4 v_color;
+
+  #if USE_TEXTURE
+  in vec2 a_uv0;
+  out vec2 v_uv0;
+  #endif
+
+  void main () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if CC_USE_MODEL
+    pos = cc_matViewProj * cc_matWorld * pos;
+    #else
+    pos = cc_matViewProj * pos;
+    #endif
+
+    #if USE_TEXTURE
+    v_uv0 = a_uv0;
+    #endif
+
+    v_color = a_color;
+
+    gl_Position = pos;
+  }
+}%
+
+
+CCProgram fs %{
+  precision highp float;
+
+  uniform sampler2D noiseTex;
+  uniform inputData{
+    vec4 u_brightness;
+    vec4 u_middle;
+    vec4 u_dark;
+    float u_time;
+  };
+
+  #include <alpha-test>
+  #include <texture>
+  #include <cc-global>
+
+  in vec4 v_color;
+
+  #if USE_TEXTURE
+  in vec2 v_uv0;
+  uniform sampler2D texture;
+  #endif
+
+
+  void main () {
+    //vec4 o = vec4(1, 1, 1, 1);
+
+    // #if USE_TEXTURE
+    //   CCTexture(texture, v_uv0, o);
+    // #endif
+
+    // o *= v_color;
+    // ALPHA_TEST(o);
+
+    // #if USE_BGRA
+    //   gl_FragColor = o.bgra;
+    // #else
+    //   gl_FragColor = o.rgba;
+    // #endif
+
+    vec2 uv = v_uv0;
+    // 让uv动起来
+    uv.y += cc_time.x * 0.6;
+
+    vec3 color = vec3(0.0);
+
+    // 噪声图取样
+    float n = 0.0;
+    #if USE_TEXTURE
+      n = texture2D(texture,uv).x;
+    #else
+      n = texture2D(noiseTex,uv).x;
+    #endif
+
+    float p1 = smoothstep(0.0,0.7,v_uv0.y);
+    float p2 = smoothstep(0.0,0.7,v_uv0.y - 0.25);
+    float p3 = smoothstep(0.0,0.7,v_uv0.y - 0.40);
+
+    // step 返回值 0或1 所以非黑即白
+    float f1 = step(n , p1);
+    float f2 = step(n , p2);
+    float f3 = step(n , p3);
+
+    // 叠加颜色
+    float r1 = f1 - f2;
+    float r2 = f2 - f3;
+    float r3 = f3;
+
+    // color = vec3(r1);
+    // color = vec3(r2);
+    // color = vec3(r2);
+    color = (u_dark * r3 + u_middle * r2 + u_brightness * r1).rgb;
+
+    // 去掉背景 使用f1做透明通道
+    // gl_FragColor = vec4(color,1.0);
+    gl_FragColor = vec4(color,f1);
+  }
+}%

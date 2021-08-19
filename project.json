@@ -1,0 +1,8 @@
+{
+  "engine": "cocos-creator-js",
+  "packages": "packages",
+  "name": "myShaderDemo",
+  "id": "7ca6bc14-19aa-4f6c-be5c-35bacac1b8e5",
+  "version": "2.4.6",
+  "isNew": false
+}
