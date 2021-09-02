@@ -18,7 +18,7 @@ export default class TestDemo1 extends cc.Component {
     // onLoad () {}
 
     start() {
-
+        
     }
 
     // update (dt) {}
