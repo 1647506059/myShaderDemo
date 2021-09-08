@@ -64,9 +64,56 @@ CCProgram fs %{
   uniform sampler2D texture;
   #endif
 
-  float drawLayer(float scale, vec2 uv){
+  float drawGird(vec2 p){
+    if(p.x > 0. && p.x < 0.01){
+      return 1.;
+    }
+    if(p.x > 0.99 && p.x < 1.){
+      return 1.;
+    }
+    if(p.y > 0. && p.y < 0.01){
+      return 1.;
+    }
+    if(p.y > 0.99 && p.y < 1.){
+      return 1.;
+    }
+    return 0.;
+  }
 
-    return 1.;
+  float drawLayer(float scale, vec2 uv){
+    // 设scale为10的情况
+    float co = 0.;
+
+    // 拷贝一份uv使用，不修改原uv
+    vec2 uv1 = uv;
+
+    // uv值范围从0-1变为0-scale scale值为10就是0-10范围
+    uv1 *= scale;
+
+    // floor向下取整，计算格子所在下表
+    // 10*10的格子，如果uv是 0.2345,0.2345，uv1就是 2.345,2.345
+    // 取整后 即为该uv所在格子的下标，2,2
+    // 0.2<=uv<=0.3 该范围的所有的uv坐标处理后uv均为 2,2
+    vec2 hv = floor(uv1);
+
+    // fr是fract对数字取小数部分，0.2345,0.2345 -> 2.345,2.345 -> 0.345,0.345
+    vec2 fr = fract(uv1);
+
+    // 用fr.x+fr.y作为输出看一下结果
+    // co += fr.x + fr.y;
+
+    // 画圆,用fr(即格内坐标)和0.5,0.5的点的距离作为颜色值，circle范围0-0.5
+    float circle = distance(fr, vec2(0.5));
+
+    // 上面的结果是距离值计算出来的，有明暗辩护，用step吧圆内都变成纯白色
+    float radius = 0.4; // 半径
+    circle = step(radius,circle);
+
+    // 1. - circle 翻转颜色值，使距离圆心越近的颜色越亮
+    co += circle;
+    co += drawGird(fr);
+
+    return co;
   }
 
   float hashOld12(vec2 p){
@@ -74,17 +121,17 @@ CCProgram fs %{
   }
 
   void main () {
-    vec4 o = vec4(1,1,1,1);
+    vec4 o = vec4(0.);
 
     #if USE_TEXTURE
       CCTexture(texture, v_uv0, o);
     #endif
 
-    o.xyz = vec3(hashOld12(v_uv0));
-    // o.xyz =drawLayer(10. , v_uv0);
+    // o.xyz = vec3(hashOld12(v_uv0));
+    o.xyz += drawLayer(10. , v_uv0);
     o.a = 1.;
-
-    // o *= v_color;
+    
+    o *= v_color;
 
     ALPHA_TEST(o);
 
