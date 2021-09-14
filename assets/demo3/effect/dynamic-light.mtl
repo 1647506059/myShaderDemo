@@ -10,11 +10,49 @@
   "_techniqueData": {
     "0": {
       "defines": {
-        "USE_TEXTURE": true
+        "USE_TEXTURE": true,
+        "USE_ALPHA_TEST": false,
+        "USE_BGRA": false,
+        "INPUT_IS_GAMMA": false
       },
       "props": {
-        "texture": {
-          "__uuid__": "0275e94c-56a7-410f-bd1a-fc7483f7d14a"
+        "noiseTex": {
+          "__uuid__": "db7bca3a-b7c3-4ecf-adfe-e8c01059f329"
+        },
+        "colorLeft": {
+          "__type__": "cc.Color",
+          "r": 213,
+          "g": 74,
+          "b": 74,
+          "a": 255
+        },
+        "colorRight": {
+          "__type__": "cc.Color",
+          "r": 40,
+          "g": 36,
+          "b": 234,
+          "a": 255
+        },
+        "color1": {
+          "__type__": "cc.Color",
+          "r": 200,
+          "g": 25,
+          "b": 239,
+          "a": 255
+        },
+        "color2": {
+          "__type__": "cc.Color",
+          "r": 182,
+          "g": 210,
+          "b": 101,
+          "a": 255
+        },
+        "color3": {
+          "__type__": "cc.Color",
+          "r": 255,
+          "g": 0,
+          "b": 0,
+          "a": 255
         }
       }
     }

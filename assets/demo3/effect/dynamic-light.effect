@@ -12,6 +12,13 @@ CCEffect %{
         cullMode: none
       properties:
         texture: { value: white }
+        noiseTex: { value: white }
+        colorLeft: {  value: [1.,1.,1.,1.],editor: { type: "color"}}
+        colorRight: { value: [1.,1.,1.,1.],editor: { type: "color"}}
+        color1: { value: [1.,1.,1.,1.],editor: { type: "color"}}
+        color2: { value: [1.,1.,1.,1.],editor: { type: "color"}}
+        color3: { value: [1.,1.,1.,1.],editor: { type: "color"}}
+        u_time: { value: 0.5 }
         alphaThreshold: { value: 0.5 }
 }%
 
@@ -54,6 +61,17 @@ CCProgram vs %{
 CCProgram fs %{
   precision highp float;
 
+  uniform sampler2D noiseTex;
+  uniform inputData{
+    vec4 colorLeft;
+    vec4 colorRight;
+    vec4 color1;
+    vec4 color2;
+    vec4 color3;
+    float u_time;
+  };
+
+  #include <cc-global>
   #include <alpha-test>
   #include <texture>
 
@@ -64,6 +82,7 @@ CCProgram fs %{
   uniform sampler2D texture;
   #endif
 
+  // 画格子
   float drawGird(vec2 p){
     if(p.x > 0. && p.x < 0.01){
       return 1.;
@@ -80,7 +99,8 @@ CCProgram fs %{
     return 0.;
   }
 
-  float drawLayer(float scale, vec2 uv){
+  /** 绘制格子 */
+  float drawLayerGrid(float scale, vec2 uv){
     // 设scale为10的情况
     float co = 0.;
 
@@ -100,45 +120,126 @@ CCProgram fs %{
     vec2 fr = fract(uv1);
 
     // 用fr.x+fr.y作为输出看一下结果
-    // co += fr.x + fr.y;
+    co += fr.x + fr.y;
+    
+    // 返回处理后的值
+    return co;
+  }
+
+  /** 随机函数 */
+  float hashOld12(vec2 p){
+	  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  float drawLayer(float scale, vec2 uv){
+    // 设scale为10的情况
+    float co = 0.;
+
+    // 拷贝一份uv使用，不修改原uv
+    vec2 uv1 = uv;
+
+    // uv值范围从0-1变为0-scale scale值为10就是0-10范围
+    uv1 *= scale;
+
+    // hv.y做随机，给该行的uv1.x做差值    
+    vec2 hvtemp = floor(uv1);
+    float n = hashOld12(vec2(hvtemp.y));
+    uv1.x += n;
+
+    // floor向下取整，计算格子所在下表
+    // 10*10的格子，如果uv是 0.2345,0.2345，uv1就是 2.345,2.345
+    // 取整后 即为该uv所在格子的下标，2,2
+    // 0.2<=uv<=0.3 该范围的所有的uv坐标处理后uv均为 2,2
+    vec2 hv = floor(uv1);
+    // fr是fract对数字取小数部分，0.2345,0.2345 -> 2.345,2.345 -> 0.345,0.345
+    vec2 fr = fract(uv1);
 
     // 画圆,用fr(即格内坐标)和0.5,0.5的点的距离作为颜色值，circle范围0-0.5
     float circle = distance(fr, vec2(0.5));
 
     // 上面的结果是距离值计算出来的，有明暗辩护，用step吧圆内都变成纯白色
     float radius = 0.4; // 半径
-    circle = step(radius,circle);
+    // 用hv引入随机的半径 因为一格内的hv相同，随机值结果也就是半径值相等
+    radius = hashOld12(hv);
+    // 亮度 用这个初始随机值做亮度使用
+    float strength = radius;
+    // raduis 0-1 映射到0.1 - 0.4的范围
+    radius = radius * 0.3 + 0.1;
+
+    // 半径10取整，对2取余，舍弃一般的圆
+    // float mod(float x , float y) 计算一个参数对另一个参数的值模。x - y * floor( x / y);
+    float f1 = mod(floor(radius * 10.),2.);
+    radius *= f1;
+    
+    // 这一行注释掉，用下一行。这时模糊圆圈边缘的函数，0.02*scale就是模糊的宽度，这个系数也可以自己调整到喜欢的数值
+    // circle = step(radius,circle);
+    // 这个系数和strength乘的系数调整个不同的值，组合起来效果也不大一样。
+    circle = smoothstep(radius - .02 * scale,radius,circle);
 
     // 1. - circle 翻转颜色值，使距离圆心越近的颜色越亮
+    circle = 1. - circle;
+    // 让层亮和格子大小成正比例（scale是uv的缩放数，越大格子就越小）
+    // * 9 是因为有些暗，变亮点，这个值可以随便调
+    strength *= 1. / scale * 9.;
+    // strength *= sin(cc_time.x) + 1.;
+    circle *= strength;
+    
     co += circle;
-    co += drawGird(fr);
 
+    // 这里需要将绘制格子的方法注释
+    // co += drawGird(fr);
     return co;
   }
 
-  float hashOld12(vec2 p){
-	  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-  }
-
   void main () {
-    vec4 o = vec4(0.);
+    vec2 uv = vec2(v_uv0.x , v_uv0.y);
+    vec3 co = vec3(0.);
+    // 加个背景色
+    co += mix(colorLeft,colorRight,uv.y).xyz;
 
+    vec4 carr[3];
+    carr[0] = color1;
+    carr[1] = color2;
+    carr[2] = color3;
+
+    for(int i = 0; i < 3; i++){
+      float idx = float(i);
+      // 用循环下标做一个递增的层半径
+      float p1 = idx * 5. + 3.;
+
+      // 给每一层做一个随机运动方向 也就是一个速度向量
+      vec2 uvoff = vec2( hashOld12(vec2(p1)) , hashOld12(vec2(p1 * 10.0)) );
+      // 速度 * 时间 = 偏移距离 让层随时间运动 可以注释掉 u_time 就不会运动了
+      uvoff = uvoff * u_time * 0.1;
+
+      vec2 p2 = vec2(uv.x , uv.y) + uvoff;
+
+      // p1 半径 p2 供计算uv值
+      float layer = drawLayer(p1 , p2);
+
+      co += layer * carr[i].xyz;
+    }
+
+    gl_FragColor =vec4(co,1.);
+
+
+    vec4 o = vec4(0.);
     #if USE_TEXTURE
       CCTexture(texture, v_uv0, o);
     #endif
-
+    // 噪声生成
     // o.xyz = vec3(hashOld12(v_uv0));
-    o.xyz += drawLayer(10. , v_uv0);
-    o.a = 1.;
-    
-    o *= v_color;
-
-    ALPHA_TEST(o);
-
+    // 划分格子
+    // o.xyz += drawLayerGrid(10. , v_uv0);
+    // 动态光影
+    // o.xyz += drawLayer(10. , v_uv0);
+    // o.a = 1.;
+    // o *= v_color;
+    // ALPHA_TEST(o);
     #if USE_BGRA
-      gl_FragColor = o.bgra;
+     // gl_FragColor = o.bgra;
     #else
-      gl_FragColor = o.rgba;
+     // gl_FragColor = o.rgba;
     #endif
   }
 }%
