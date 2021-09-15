@@ -13,6 +13,8 @@ CCEffect %{
       properties:
         texture: { value: white }
         alphaThreshold: { value: 0.5 }
+        u_time: { value: 0.5 }
+        touch_pos: { value: [0.5,0.7]}
 }%
 
 
@@ -54,6 +56,11 @@ CCProgram vs %{
 CCProgram fs %{
   precision highp float;
 
+  uniform inputData{
+    vec2 touch_pos;
+    float u_time;
+  };
+
   #include <alpha-test>
   #include <texture>
 
@@ -64,10 +71,54 @@ CCProgram fs %{
   uniform sampler2D texture;
   #endif
 
+  // 传入图片真实宽高 不能以分号结尾
+  #define iResolution vec2(1200.,1600.)
+
   void main () {
     vec2 uv = v_uv0;
+
+    //圆心
+    vec2 p = touch_pos; //vec2(.5, .7);
+
+    // 求圆心到圆的距离
+    vec2 off = p - uv;
+    off.x *= iResolution.x / iResolution.y;
+    float dis = length(off);
+
+    // 圆半径
+    float r = .02;
+    // 让圆随着时间变大
+    r += u_time * .6;
+
+    // 圆线宽度即圆环
+    float width = .005;
+
+    // 圆线边缘过渡区域宽度
+    float border = .01;
+    // 边缘宽度要随着圆半径变大而变宽 *30 是因为圆半径本身的值太小了，乘以30倍吧
+    border *= r * 30.5;
+
+    // 画圆
+    float circle = smoothstep(r + width + border , r + width , dis) - smoothstep(r , r - border , dis);
+
+    // 强度小一些
+    circle *= .4;
+    // 圆运动的最大边界 float max(float x, float y) 返回两个值中的较大者。
+    circle *= max(.3 - dis, 0.);
+
+    // uv - p 两点相减的到uv到圆心的方向向量，用向量*强度得到最终偏移，强度就是前面画圆白圈值
+    uv = uv + (uv - p) * circle;
+
+    // 对图片采样返回一个rgba的vec4分量表示图片采样颜色结果
     vec4 tex = texture2D(texture , uv);
+
+    // 图片正常颜色上，加上圆圈的值，圆圈的值得取值范围是0-1 色彩rgb也是0-1，加起来就是0-2,rgb全部>=1时显示白色，
+    // 这里相加单纯是为了查看圆的形状，没有什么实际的意义，后面用这个circle的值做uv偏移。
+    // 这里线用白色表示为了方便观察动画轨迹
+    // 这里是白圈演示
+    // tex.xyz += circle;
+
     gl_FragColor = vec4(tex.xyz , tex.w);
   }
-  
+
 }%
