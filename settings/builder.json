@@ -1,7 +1,7 @@
 {
   "title": "myShaderDemo",
   "packageName": "org.cocos2d.demo",
-  "startScene": "54d93200-b06d-4c72-9baa-1feefeb4d2f6",
+  "startScene": "2cff87c8-412c-415a-a43e-0ed1c8cf2145",
   "excludeScenes": [],
   "orientation": {
     "landscapeRight": true,
