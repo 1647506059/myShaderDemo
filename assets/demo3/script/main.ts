@@ -5,7 +5,7 @@
 // Learn life-cycle callbacks:
 //  - https://docs.cocos.com/creator/manual/en/scripting/life-cycle-callbacks.html
 
-const { ccclass, property,executeInEditMode } = cc._decorator;
+const { ccclass, property, executeInEditMode } = cc._decorator;
 
 @ccclass
 @executeInEditMode
@@ -20,7 +20,7 @@ export default class NewClass extends cc.Component {
         console.log(materials);
     }
     update(dt) {
-        this.u_time +=dt;
+        this.u_time += dt;
         this.NewSprite.getMaterial(0).setProperty('u_time', this.u_time);
     }
 }
