@@ -19,13 +19,15 @@ export default class MainList extends cc.Component {
         "demo1",
         "demo2",
         "demo3",
-        "demo4"
+        "demo4",
+        "demo5"
     ];
     targetDemoName = [
         "火焰效果",
         "电视机雪花",
         "动态光影",
-        "震动波"
+        "震动波",
+        "河流水面"
     ];
 
     onLoad() {
